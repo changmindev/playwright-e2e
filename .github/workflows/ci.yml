@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  structure:
+    name: 구조 검사 (import · 수집)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # 🔴 여기서 테스트를 '실행'하지 않는 이유
+      #
+      # 이 저장소의 대상은 내가 통제할 수 없는 외부 사이트다.
+      # CI 러너는 해외 IP 에서 돌고, 대상 사이트는 지역·시간대·접속 환경에 따라
+      # 다른 화면을 준다. 그대로 돌리면 내 코드가 멀쩡한데도 빨간불이 뜬다.
+      # 빨간불이 일상이 되는 순간 CI 는 아무도 안 보는 장식이 된다.
+      #
+      # 대신 CI 는 '코드가 깨졌는가'만 본다 — import 가 끊겼는지, 문법이 맞는지,
+      # 테스트가 수집은 되는지. 실제 실행은 사람이 의도를 갖고 돌린다.
+      - name: 문법 검사
+        run: python -m compileall -q naver_weather
+
+      - name: 테스트 수집 (import 끊김 탐지)
+        run: pytest --collect-only -q
