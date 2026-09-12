@@ -30,7 +30,7 @@ jobs:
       # 대신 CI 는 '코드가 깨졌는가'만 본다 — import 가 끊겼는지, 문법이 맞는지,
       # 테스트가 수집은 되는지. 실제 실행은 사람이 의도를 갖고 돌린다.
       - name: 문법 검사
-        run: python -m compileall -q naver_weather
+        run: python -m compileall -q saucedemo naver_weather
 
       - name: 테스트 수집 (import 끊김 탐지)
         run: pytest --collect-only -q
