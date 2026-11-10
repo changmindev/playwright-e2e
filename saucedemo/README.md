@@ -3,11 +3,11 @@
 > [playwright-e2e](../README.md) 저장소의 스위트 하나입니다. 대상: [Swag Labs](https://www.saucedemo.com)
 
 Python + Playwright + pytest 로 작성한 웹 E2E 자동화입니다.
-대상은 자동화 연습용으로 공개된 쇼핑몰 데모 사이트 [Swag Labs](https://www.saucedemo.com) 입니다.
+대상은 자동화 연습용으로 공개된 쇼핑몰 데모 사이트입니다.
 
-해피패스만 도는 데모가 아니라, **자동화가 실제 제품 결함을 잡아내는 것까지** 확인합니다.
-이 사이트는 결함이 심어진 계정(`problem_user`)을 제공하므로,
-같은 검증을 계정만 바꿔 돌려 정상 동작과 결함 동작의 차이를 드러냅니다.
+해피패스만 보지 않고, 자동화가 실제 제품 결함을 잡아내는지까지 확인합니다.
+이 사이트는 결함이 심어진 계정(`problem_user`)을 제공해서,
+같은 검증을 계정만 바꿔 돌리면 정상 동작과 결함 동작의 차이가 드러납니다.
 
 ---
 
@@ -25,9 +25,9 @@ Python + Playwright + pytest 로 작성한 웹 E2E 자동화입니다.
 | `test_checkout.py` | 9 | 필수값 3종 · 소계·세액·합계 역산 대조 · 주문 완료 |
 | `test_defect_detection.py` | 14 | 같은 검증 7건 × (정상 계정 / 결함 계정) |
 
-**xfailed 7건은 실패가 아닙니다.** `problem_user` 계정에서 확인된
+xfailed 7건은 실패가 아닙니다. `problem_user` 계정에서 확인한
 제품 결함 5건을 `xfail(strict=True)` 로 고정해 둔 것입니다.
-결함이 수정되어 통과하게 되면 그 테스트가 **실패로 바뀌어** 알려 줍니다.
+결함이 고쳐져 통과하게 되면 그 테스트가 실패로 바뀌어 알려 줍니다.
 
 ### 찾은 결함 5건
 
@@ -39,7 +39,7 @@ Python + Playwright + pytest 로 작성한 웹 E2E 자동화입니다.
 | D-04 | 상품명 링크가 다른 상품 상세로 이동 (id +1 어긋남, 1건은 존재하지 않는 상품) | Critical |
 | D-05 | 체크아웃 Last Name 입력이 저장되지 않음 | High |
 
-재현 절차·기대/실제는 **[docs/DEFECTS.md](docs/DEFECTS.md)** 에 정리했습니다.
+재현 절차와 기대/실제는 [docs/DEFECTS.md](docs/DEFECTS.md) 에 정리했습니다.
 
 ---
 
@@ -71,9 +71,8 @@ playwright show-trace test-results/<테스트명>/trace.zip
 ## 구조
 
 ```
-.
+saucedemo/
 ├─ conftest.py          공통 픽스처 — 셀렉터 기준, 로그인 상태, 대기 상한
-├─ pytest.ini           실행 옵션 (실패 시에만 아티팩트 저장)
 ├─ pages/               Page Object — 셀렉터는 전부 이 안에만 있습니다
 │   ├─ base_page.py         공통 헤더 · 금액 파싱
 │   ├─ login_page.py        inventory_page.py   item_detail_page.py
@@ -85,14 +84,16 @@ playwright show-trace test-results/<테스트명>/trace.zip
     └─ DECISIONS.md     왜 이렇게 설계했는지
 ```
 
-**테스트 본문에 CSS 문자열이 한 줄도 없습니다.** 셀렉터는 Page Object 안에만 둡니다.
+실행 옵션(실패 시에만 아티팩트 저장)과 마커는 저장소 루트의 `pytest.ini` 한 곳에 모여 있습니다.
+
+테스트 본문에는 CSS 문자열이 한 줄도 없습니다. 셀렉터는 Page Object 안에만 둡니다.
 화면이 바뀌면 고칠 곳이 한 군데입니다.
 
 ---
 
 ## 설계에서 신경 쓴 것
 
-전체 근거는 **[docs/DECISIONS.md](docs/DECISIONS.md)** 에 있고, 요약하면 다음과 같습니다.
+전체 근거는 [docs/DECISIONS.md](docs/DECISIONS.md) 에 있고, 요약하면 다음과 같습니다.
 
 **① 기대값을 화면에서 만들지 않습니다.**
 정렬 기대 순서와 금액은 `data/products.py` 의 카탈로그에서 계산합니다.
@@ -115,7 +116,7 @@ float 이면 `29.99 + 9.99 = 39.980000000000004` 로 맞는 금액인데 실패�
 
 **⑤ 간헐적 실패를 재시도로 덮지 않았습니다.**
 실행 시간이 평소의 2배 이상으로 늘어난 날 픽스처 단계에서 시간이 초과된 적이
-두 번 있습니다. 재시도 플러그인을 넣는 대신 **대기 상한을 올려** 대응했습니다.
+두 번 있습니다. 재시도 플러그인을 넣는 대신 대기 상한을 올려 대응했습니다.
 원인이 "제품이 간헐적으로 틀린다"가 아니라 "외부 사이트가 그날 느렸다"로 보이기
 때문입니다. 재시도로 덮으면 진짜 간헐 결함이 생겼을 때도 똑같이 덮입니다.
 실측치는 아래 안정성 항목에 그대로 적었습니다.
@@ -197,4 +198,6 @@ run 21: 37 passed, 7 xfailed in 35.99s
 
 ## 환경
 
-Python 3.13.0 · Playwright 1.62.0 · pytest 8.3.3 · Chromium 151.0.7922.34 · macOS 26.5.2
+위 안정성 실측(2026-08-25): Python 3.13.0 · Playwright 1.62.0 · pytest 8.3.3 · Chromium 151.0.7922.34 · macOS 26.5.2
+
+의존성 갱신 후 재확인(2026-11-10): Playwright 1.65.0 · pytest 9.2.0 · pytest-playwright 0.10.0 · Chromium headless shell 158 → `37 passed, 7 xfailed in 35.50s` (1회)
