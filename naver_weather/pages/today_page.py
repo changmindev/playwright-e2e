@@ -24,7 +24,11 @@ ROW_HUMIDITY = "습도"
 # 자정 칸은 시각 대신 날짜 라벨이 붙는다. '0시' 가 아니라 '내일' · '모레' 로 온다.
 # 이걸 모르고 '…시' 만 골라내면 **하루에 한 칸씩 조용히 빠진다.**
 # 실제로 첫 실행에서 `23시 → 1시` 로 시간이 끊겨 잡혔다.
-DAY_MARKERS = {"내일": 1, "모레": 2}
+#
+# '글피' 는 23시대에만 나온다. 오늘 남은 시간이 없으면 표가 내일 0시부터
+# 사흘치를 보여 주고, 그때 첫 날 라벨('내일')은 표 왼쪽 위 칸으로 올라간다.
+# (2026-11-10 23시대 실행에서 '글피' 칸이 빠져 세 지역 모두 `23시 → 1시` 로 다시 잡혔다.)
+DAY_MARKERS = {"오늘": 0, "내일": 1, "모레": 2, "글피": 3}
 
 
 @dataclass
@@ -81,6 +85,7 @@ class TodayPage(BasePage):
             raise ParseError("시간별 표를 찾지 못함")
 
         header = grid[0]["cells"]          # '12시 흐림' · '18:46 일몰' 이 섞여 있다
+        corner = grid[0]["head"].split(" ")[0]   # 첫 날 라벨이 여기 붙는 경우가 있다
         rows = {r["head"].split(" ")[0]: r["cells"] for r in grid[1:] if r["head"]}
 
         def col(label: str, i: int) -> str | None:
@@ -88,13 +93,19 @@ class TodayPage(BasePage):
             return values[i] if values and i < len(values) else None
 
         points: list[HourlyPoint] = []
-        day = 0
+        day = DAY_MARKERS.get(corner, 0)
         for i, head in enumerate(header):
             first, _, rest = head.partition(" ")
             if first.endswith("시") and first.removesuffix("시").isdigit():
                 hour = first
+                if points and int(first[:-1]) < int(points[-1].hour_label[:-1]):
+                    day += 1   # 라벨 없이 '0시' 로 넘어가는 날(표 끝 칸)도 있다
             elif first in DAY_MARKERS:
                 day = DAY_MARKERS[first]
+                hour = "0시"
+            elif first and not first[0].isdigit():
+                # 모르는 날짜 라벨. 조용히 건너뛰면 자정 칸이 빠지므로 다음 날 0시로 본다.
+                day += 1
                 hour = "0시"
             else:
                 # 일출·일몰 칸은 시간별 예보가 아니다. 값이 비는 게 정상이라 건너뛴다.
